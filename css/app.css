@@ -1,0 +1,438 @@
+/* ---------- Theme variables (overridden by themes.js) ---------- */
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --line-height: 1.6;
+  --para-spacing: 1em;
+  --margin: 24px;
+  --font-size: 18px;
+
+  --overlay-bg: rgba(0, 0, 0, 0.82);
+  --overlay-fg: #f2f2f2;
+  --accent: #4a78ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ---------- View switching ---------- */
+.view {
+  display: none;
+}
+.view.active {
+  display: block;
+}
+
+/* ---------- Library ---------- */
+.lib-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  z-index: 2;
+}
+.lib-header h1 {
+  font-size: 1.25rem;
+  margin: 0;
+  flex: 1;
+}
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-weight: 600;
+}
+button.danger {
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 14px;
+}
+
+.empty {
+  text-align: center;
+  opacity: 0.7;
+  margin: 56px 24px;
+  line-height: 1.6;
+}
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+.book-card {
+  position: relative;
+}
+.book-cover {
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(128, 128, 128, 0.15);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.book-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.book-cover.no-cover {
+  padding: 12px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+.book-meta {
+  margin-top: 8px;
+}
+.book-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.book-author {
+  font-size: 0.75rem;
+  opacity: 0.65;
+  margin-top: 2px;
+}
+.card-progress {
+  height: 3px;
+  background: rgba(128, 128, 128, 0.25);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.card-progress > div {
+  height: 100%;
+  background: var(--accent);
+}
+.book-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Reader ---------- */
+#reader-viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+}
+#reader-content {
+  position: absolute;
+  /* left/width/top + column geometry + transform set by reader.js */
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  /* Instant page turns: no transition on transform. */
+  transition: none;
+  will-change: transform;
+}
+#reader-content p {
+  margin: 0 0 var(--para-spacing) 0;
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+#reader-content h1,
+#reader-content h2,
+#reader-content h3 {
+  line-height: 1.3;
+}
+#reader-content img,
+#reader-content svg {
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+  display: block;
+  margin: 0.5em auto;
+}
+#reader-content a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* ---------- Overlays ---------- */
+.overlay {
+  position: fixed;
+  left: 0;
+  right: 0;
+  background: var(--overlay-bg);
+  color: var(--overlay-fg);
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.overlay-top {
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  transform: translateY(-100%);
+}
+.overlay-bottom {
+  bottom: 0;
+  padding: 12px 16px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateY(100%);
+}
+#reader.overlay-visible .overlay {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.reader-title {
+  flex: 1;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--overlay-fg);
+  font-size: 1.5rem;
+  line-height: 1;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.progress-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  overflow: hidden;
+}
+#progress-bar {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+}
+.progress-label {
+  font-size: 0.75rem;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.font-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.font-value {
+  font-size: 0.8rem;
+  min-width: 36px;
+  text-align: center;
+  opacity: 0.85;
+}
+.ctl-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: var(--overlay-fg);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+.theme-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.theme-chip {
+  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.4);
+}
+.theme-chip.active {
+  border-color: var(--accent);
+}
+
+/* ---------- TOC drawer ---------- */
+.toc-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(80vw, 320px);
+  background: var(--overlay-bg);
+  color: var(--overlay-fg);
+  z-index: 20;
+  transform: translateX(100%);
+  transition: transform 0.2s ease;
+  overflow-y: auto;
+  padding: 20px;
+  padding-top: max(20px, env(safe-area-inset-top));
+}
+.toc-panel.open {
+  transform: translateX(0);
+}
+.toc-panel h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+.toc-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.toc-panel li {
+  padding: 12px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.toc-panel li:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Theme editor modal ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal.open {
+  display: flex;
+}
+.modal-card {
+  background: var(--bg);
+  color: var(--fg);
+  border-radius: 14px;
+  padding: 20px;
+  width: min(440px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+.modal-card h2 {
+  margin-top: 0;
+}
+.modal-card label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0;
+  font-size: 0.9rem;
+}
+.modal-card input[type="text"] {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  background: transparent;
+  color: inherit;
+}
+.modal-card input[type="range"] {
+  flex: 1;
+}
+.modal-card input[type="color"] {
+  width: 48px;
+  height: 32px;
+  border: none;
+  background: none;
+}
+.modal-card hr {
+  border: none;
+  border-top: 1px solid rgba(128, 128, 128, 0.25);
+  margin: 16px 0;
+}
+.editor-theme-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.editor-theme-row.active .theme-chip {
+  border-color: var(--accent);
+}
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+.modal-actions .spacer {
+  flex: 1;
+}

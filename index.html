@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>Strobe Reader</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <!-- ========================= LIBRARY ========================= -->
+    <section id="library" class="view active">
+      <header class="lib-header">
+        <h1>Strobe Reader</h1>
+        <button id="import-btn" class="primary">＋ Add book</button>
+        <input
+          id="import-input"
+          type="file"
+          accept=".epub,application/epub+zip"
+          multiple
+          hidden
+        />
+      </header>
+      <p id="empty-state" class="empty">
+        Your library is empty. Tap <strong>Add book</strong> to import an EPUB.
+      </p>
+      <div id="book-grid" class="book-grid"></div>
+    </section>
+
+    <!-- ========================= READER ========================= -->
+    <section id="reader" class="view">
+      <div id="reader-viewport">
+        <div id="reader-content"></div>
+      </div>
+
+      <!-- Top overlay -->
+      <div id="reader-top" class="overlay overlay-top">
+        <button id="back-btn" class="icon-btn" title="Back to library">‹</button>
+        <span id="book-title" class="reader-title"></span>
+        <button id="toc-btn" class="icon-btn" title="Contents">☰</button>
+      </div>
+
+      <!-- Bottom overlay -->
+      <div id="reader-bottom" class="overlay overlay-bottom">
+        <div class="progress-row">
+          <div class="progress-track"><div id="progress-bar"></div></div>
+          <span id="progress-label" class="progress-label"></span>
+        </div>
+        <div class="controls-row">
+          <div class="font-controls">
+            <button id="font-dec" class="ctl-btn">A−</button>
+            <span id="font-value" class="font-value"></span>
+            <button id="font-inc" class="ctl-btn">A＋</button>
+          </div>
+          <button id="edit-theme-btn" class="ctl-btn">Themes…</button>
+        </div>
+        <div id="theme-row" class="theme-row"></div>
+      </div>
+
+      <!-- Table of contents drawer -->
+      <aside id="toc-panel" class="toc-panel">
+        <h2>Contents</h2>
+        <ul id="toc-list"></ul>
+      </aside>
+    </section>
+
+    <!-- ===================== THEME EDITOR ===================== -->
+    <div id="theme-editor" class="modal">
+      <div class="modal-card">
+        <h2>Themes</h2>
+        <div id="editor-theme-list" class="editor-theme-list"></div>
+        <hr />
+        <h3 id="editor-heading">New theme</h3>
+        <label
+          >Name <input id="te-name" type="text" placeholder="My theme"
+        /></label>
+        <label
+          >Background <input id="te-bg" type="color" value="#ffffff"
+        /></label>
+        <label
+          >Text color <input id="te-fg" type="color" value="#1a1a1a"
+        /></label>
+        <label
+          >Line height
+          <input id="te-line" type="range" min="1.1" max="2.2" step="0.05" />
+          <span id="te-line-val"></span>
+        </label>
+        <label
+          >Paragraph spacing
+          <input id="te-para" type="range" min="0" max="2" step="0.1" />
+          <span id="te-para-val"></span>
+        </label>
+        <label
+          >Margin
+          <input id="te-margin" type="range" min="0" max="80" step="2" />
+          <span id="te-margin-val"></span>
+        </label>
+        <div class="modal-actions">
+          <button id="te-delete" class="danger" hidden>Delete</button>
+          <span class="spacer"></span>
+          <button id="te-cancel" class="ctl-btn">Close</button>
+          <button id="te-save" class="primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
