@@ -65,7 +65,8 @@
             <span id="font-value" class="font-value"></span>
             <button id="font-inc" class="ctl-btn">A＋</button>
           </div>
-          <button id="edit-theme-btn" class="ctl-btn">Themes…</button>
+          <button id="edit-theme-btn" class="ctl-btn">Themes</button>
+          <button id="edit-typo-btn" class="ctl-btn">Text</button>
         </div>
 
         <!-- Strobe controls. Mode picks which layer flickers: the background
@@ -173,30 +174,49 @@
           >Text color
           <div id="te-fg-swatches" class="swatch-grid"></div>
         </label>
-        <label class="swatch-label"
-          >Reading font
-          <div id="te-font" class="font-options"></div>
-        </label>
-        <label
-          >Line height
-          <input id="te-line" type="range" min="1.1" max="2.2" step="0.05" />
-          <span id="te-line-val"></span>
-        </label>
-        <label
-          >Paragraph spacing
-          <input id="te-para" type="range" min="0" max="2" step="0.1" />
-          <span id="te-para-val"></span>
-        </label>
-        <label
-          >Margin
-          <input id="te-margin" type="range" min="0" max="80" step="2" />
-          <span id="te-margin-val"></span>
-        </label>
         <div class="modal-actions">
           <button id="te-delete" class="danger" hidden>Delete</button>
           <span class="spacer"></span>
           <button id="te-cancel" class="ctl-btn">Close</button>
           <button id="te-save" class="primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TEXT (TYPOGRAPHY) EDITOR ===================== -->
+    <div id="typo-editor" class="modal">
+      <div class="modal-card">
+        <h2>Text</h2>
+        <div id="typo-list" class="editor-theme-list"></div>
+        <hr />
+        <h3 id="typo-heading">New preset</h3>
+        <label
+          >Name <input id="ty-name" type="text" placeholder="My preset"
+        /></label>
+        <label class="swatch-label"
+          >Reading font
+          <div id="ty-font" class="font-options"></div>
+        </label>
+        <label
+          >Line height
+          <input id="ty-line" type="range" min="1.1" max="2.2" step="0.05" />
+          <span id="ty-line-val"></span>
+        </label>
+        <label
+          >Paragraph spacing
+          <input id="ty-para" type="range" min="0" max="2" step="0.1" />
+          <span id="ty-para-val"></span>
+        </label>
+        <label
+          >Margin
+          <input id="ty-margin" type="range" min="0" max="80" step="2" />
+          <span id="ty-margin-val"></span>
+        </label>
+        <div class="modal-actions">
+          <button id="ty-delete" class="danger" hidden>Delete</button>
+          <span class="spacer"></span>
+          <button id="ty-cancel" class="ctl-btn">Close</button>
+          <button id="ty-save" class="primary">Save</button>
         </div>
       </div>
     </div>
