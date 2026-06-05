@@ -40,6 +40,30 @@ python3 -m http.server 8000
 Or deploy the folder to any static host. This repo is deployed via **GitHub
 Pages** at <https://itsfarseen.github.io/strobe-reader/>.
 
+## Publishing updates (READ THIS before shipping a change)
+
+The PWA caches its whole app shell with a **cache-first** service worker, so an
+installed copy keeps serving the *cached* files and only refreshes when the
+service worker itself changes byte-for-byte.
+
+**Whenever a change touches any precached shell asset** — `index.html`,
+`css/app.css`, anything under `js/`, `manifest.webmanifest`, the fonts, or the
+icons (i.e. anything in the `SHELL` list in `service-worker.js`) — you **must
+bump the `CACHE` constant** at the top of `service-worker.js` (e.g.
+`strobe-reader-v4` → `strobe-reader-v5`).
+
+If you skip this, the change deploys but **never reaches anyone who already
+installed the app**: the browser sees an unchanged `service-worker.js`, never
+installs a new worker, and keeps serving the old cache. (This is not
+hypothetical — it has already happened once on this repo.)
+
+Bumping the cache name is the byte change that makes the browser fetch the new
+worker, re-precache the shell, and show the in-app **"A new version is
+available. Refresh"** banner (see `registerServiceWorker()` in `js/main.js`).
+
+> This step is currently manual. Treat it as part of any shell-asset change,
+> the same way you'd update a changelog.
+
 ## How it works
 
 | Area | File |
