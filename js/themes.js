@@ -81,6 +81,10 @@ const DEFAULTS = {
   strobeFreq: 10,
   strobeIntensity: 50,
   strobeShape: "square",
+  // Jiggle config persists; the mode (off/horizontal/vertical) is transient
+  // (reader.js) so the effect always starts disabled when a book is opened.
+  jiggleFreq: 5,
+  jiggleIntensity: 20,
 };
 
 export const MIN_FONT = 12;
@@ -88,6 +92,9 @@ export const MAX_FONT = 32;
 
 export const MIN_STROBE_FREQ = 1;
 export const MAX_STROBE_FREQ = 60;
+
+export const MIN_JIGGLE_FREQ = 1;
+export const MAX_JIGGLE_FREQ = 30;
 
 let state = { ...DEFAULTS };
 const listeners = new Set();
@@ -116,6 +123,8 @@ async function persist() {
     strobeFreq: state.strobeFreq,
     strobeIntensity: state.strobeIntensity,
     strobeShape: state.strobeShape,
+    jiggleFreq: state.jiggleFreq,
+    jiggleIntensity: state.jiggleIntensity,
   });
 }
 
@@ -141,6 +150,13 @@ export function getStrobeIntensity() {
 }
 export function getStrobeShape() {
   return state.strobeShape;
+}
+
+export function getJiggleFreq() {
+  return state.jiggleFreq;
+}
+export function getJiggleIntensity() {
+  return state.jiggleIntensity;
 }
 
 // "#rrggbb" -> the per-channel inverse "#rrggbb" (255 - v). Used as the color
@@ -172,6 +188,7 @@ export function applyTheme() {
   // The strobe's target color is derived from this theme's background, so keep
   // it in sync whenever the theme changes.
   applyStrobe();
+  applyJiggle();
 }
 
 // Push strobe parameters into CSS custom properties consumed by the keyframe
@@ -192,6 +209,15 @@ export function applyStrobe() {
     "--strobe-fg-shape",
     state.strobeShape === "sine" ? "strobe-fg-sine" : "strobe-fg-square"
   );
+}
+
+// Push jiggle parameters into CSS custom properties consumed by the keyframe
+// animation in app.css. Amplitude is the slider value (0-100) mapped to 0-1em;
+// duration is one oscillation period derived from the frequency.
+export function applyJiggle() {
+  const root = document.documentElement.style;
+  root.setProperty("--jiggle-amp", `${state.jiggleIntensity / 100}em`);
+  root.setProperty("--jiggle-duration", `${1 / state.jiggleFreq}s`);
 }
 
 export async function setActiveTheme(id) {
@@ -226,6 +252,20 @@ export async function setStrobeIntensity(pct) {
 export async function setStrobeShape(shape) {
   state.strobeShape = shape === "sine" ? "sine" : "square";
   applyStrobe();
+  await persist();
+}
+
+// Jiggle setters mirror the strobe ones: update CSS vars + persist, and skip
+// notify() since jiggle doesn't affect pagination.
+export async function setJiggleFreq(hz) {
+  state.jiggleFreq = Math.max(MIN_JIGGLE_FREQ, Math.min(MAX_JIGGLE_FREQ, hz));
+  applyJiggle();
+  await persist();
+}
+
+export async function setJiggleIntensity(units) {
+  state.jiggleIntensity = Math.max(0, Math.min(100, units));
+  applyJiggle();
   await persist();
 }
 
