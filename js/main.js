@@ -274,14 +274,67 @@ function wireThemeEditor() {
 
 // ----------------------- Service worker -----------------------
 
+// Set when the user accepts an update, so the controllerchange handler below
+// reloads only for a deliberate swap — not for the clients.claim() that fires
+// on a first-ever install.
+let updateAccepted = false;
+
 function registerServiceWorker() {
-  if ("serviceWorker" in navigator) {
-    // Register right away. main() is async, so by the time we get here the
-    // window "load" event may have already fired — don't gate on it.
-    navigator.serviceWorker
-      .register("service-worker.js")
-      .catch((err) => console.warn("SW registration failed", err));
-  }
+  if (!("serviceWorker" in navigator)) return;
+
+  // Register right away. main() is async, so by the time we get here the
+  // window "load" event may have already fired — don't gate on it.
+  navigator.serviceWorker
+    .register("service-worker.js")
+    .then((reg) => {
+      // An update may have finished installing on a prior visit and be sitting
+      // in "waiting"; surface it now.
+      if (reg.waiting && navigator.serviceWorker.controller) {
+        promptUpdate(reg.waiting);
+      }
+
+      // A new worker started installing while the app is open.
+      reg.addEventListener("updatefound", () => {
+        const incoming = reg.installing;
+        if (!incoming) return;
+        incoming.addEventListener("statechange", () => {
+          // "installed" with an existing controller means an update (rather
+          // than the first install) is ready and waiting to take over.
+          if (
+            incoming.state === "installed" &&
+            navigator.serviceWorker.controller
+          ) {
+            promptUpdate(incoming);
+          }
+        });
+      });
+    })
+    .catch((err) => console.warn("SW registration failed", err));
+
+  // The new worker has taken control after the user accepted — reload once so
+  // the page runs the fresh shell.
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (updateAccepted) window.location.reload();
+  });
+}
+
+// Show the "new version available" banner. On accept, tell the waiting worker
+// to activate; the controllerchange handler then reloads the page.
+function promptUpdate(worker) {
+  const banner = $("update-banner");
+  if (!banner || banner.dataset.shown === "1") return;
+  banner.dataset.shown = "1";
+  banner.hidden = false;
+
+  $("update-reload").onclick = () => {
+    updateAccepted = true;
+    $("update-reload").disabled = true;
+    worker.postMessage({ type: "SKIP_WAITING" });
+  };
+  $("update-dismiss").onclick = () => {
+    banner.hidden = true;
+    banner.dataset.shown = "";
+  };
 }
 
 main();
