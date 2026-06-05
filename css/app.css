@@ -223,7 +223,8 @@ button.danger {
   /* Instant page turns: no transition on transform. */
   transition: none;
   will-change: transform;
-  /* Sit above the strobe overlay so only the background flickers. */
+  /* Sit above the strobe overlay (background flicker). In foreground strobe
+     mode this element's own opacity is animated to flicker the text. */
   z-index: 2;
 }
 
@@ -238,10 +239,18 @@ button.danger {
   opacity: 0;
   pointer-events: none;
 }
-/* Active only while reading with strobe enabled (toggled in reader.js). All
-   parameters come from CSS custom properties set by themes.js applyStrobe(). */
-#reader.strobe-active #strobe-overlay {
+/* Active only while reading with background strobe enabled (toggled in
+   reader.js). All parameters come from CSS custom properties set by themes.js
+   applyStrobe(). */
+#reader.strobe-bg-active #strobe-overlay {
   animation: var(--strobe-shape, strobe-square)
+    var(--strobe-duration, 0.1s) linear infinite;
+}
+/* Foreground strobe: flicker the text itself by animating its opacity. Shares
+   the same Hz/Intensity/Shape settings; uses fg-specific keyframes that dim
+   from 1 toward 1 - intensity, in phase with the background flash. */
+#reader.strobe-fg-active #reader-content {
+  animation: var(--strobe-fg-shape, strobe-fg-square)
     var(--strobe-duration, 0.1s) linear infinite;
 }
 
@@ -285,6 +294,49 @@ button.danger {
   }
   100% {
     opacity: calc(var(--strobe-max, 0) * 0);
+  }
+}
+/* Foreground square wave: text dims to (1 - intensity) for the first half of
+   the period, in phase with the background flash, then returns to full. */
+@keyframes strobe-fg-square {
+  0%,
+  49.999% {
+    opacity: calc(1 - var(--strobe-max, 0));
+  }
+  50%,
+  100% {
+    opacity: 1;
+  }
+}
+/* Foreground sine: the same raised-cosine sampling as strobe-sine, but dimming
+   the text (opacity 1 - intensity*scale) so it pulses with the background. */
+@keyframes strobe-fg-sine {
+  0% {
+    opacity: calc(1 - var(--strobe-max, 0) * 0);
+  }
+  12.5% {
+    opacity: calc(1 - var(--strobe-max, 0) * 0.146);
+  }
+  25% {
+    opacity: calc(1 - var(--strobe-max, 0) * 0.5);
+  }
+  37.5% {
+    opacity: calc(1 - var(--strobe-max, 0) * 0.854);
+  }
+  50% {
+    opacity: calc(1 - var(--strobe-max, 0) * 1);
+  }
+  62.5% {
+    opacity: calc(1 - var(--strobe-max, 0) * 0.854);
+  }
+  75% {
+    opacity: calc(1 - var(--strobe-max, 0) * 0.5);
+  }
+  87.5% {
+    opacity: calc(1 - var(--strobe-max, 0) * 0.146);
+  }
+  100% {
+    opacity: calc(1 - var(--strobe-max, 0) * 0);
   }
 }
 #reader-content p {
@@ -417,12 +469,6 @@ button.danger {
   padding: 8px 12px;
   font-size: 0.85rem;
 }
-.theme-row {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-}
 .theme-chip {
   border: 2px solid transparent;
   border-radius: 16px;
@@ -431,9 +477,6 @@ button.danger {
   font-weight: 600;
   white-space: nowrap;
   box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.4);
-}
-.theme-chip.active {
-  border-color: var(--accent);
 }
 
 /* ---------- Strobe controls (bottom overlay) ---------- */
@@ -470,8 +513,20 @@ button.danger {
   color: var(--overlay-fg);
   border-color: rgba(255, 255, 255, 0.3);
 }
-#strobe-toggle.active {
+#strobe-mode .font-option.active {
   background: var(--accent);
+}
+/* Kill switch: a prominent red Stop button. Dimmed while strobe is already
+   off so the active state reads clearly. */
+.strobe-stop {
+  background: #c0392b;
+  color: #fff;
+  font-weight: 600;
+}
+.strobe-stop:disabled {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--overlay-fg);
+  opacity: 0.45;
 }
 
 /* ---------- TOC drawer ---------- */

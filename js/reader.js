@@ -5,11 +5,8 @@
 import { sanitizeChapter } from "./sanitize.js";
 import { saveProgress } from "./db.js";
 import {
-  activeTheme,
   getFontSize,
   setFontSize,
-  setActiveTheme,
-  allThemes,
   onChange,
   MIN_FONT,
   MAX_FONT,
@@ -32,7 +29,7 @@ let pageCount = 1;
 let pendingFraction = 0; // restore target within a freshly loaded chapter
 let saveTimer = null;
 let overlayVisible = false;
-let strobeEnabled = false; // transient: always starts off when a book opens
+let strobeMode = "off"; // transient: "off" | "fg" | "bg" | "both", reset on open
 
 export function initReader(elements, exitCallback) {
   els = elements;
@@ -49,10 +46,17 @@ export function initReader(elements, exitCallback) {
   els.fontDec.addEventListener("click", () => setFontSize(getFontSize() - 1));
   els.fontInc.addEventListener("click", () => setFontSize(getFontSize() + 1));
 
-  // Strobe controls. The enable state is transient (reset on open); the
+  // Strobe controls. The mode is transient (reset on open); the
   // frequency/intensity/shape settings persist via themes.js.
-  els.strobeToggle.addEventListener("click", () => {
-    strobeEnabled = !strobeEnabled;
+  els.strobeMode.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-mode]");
+    if (!btn) return;
+    strobeMode = btn.dataset.mode;
+    applyStrobeState();
+  });
+  // Kill switch: stop all strobing immediately if it causes discomfort.
+  els.strobeStop.addEventListener("click", () => {
+    strobeMode = "off";
     applyStrobeState();
   });
   els.strobeFreq.addEventListener("input", () => {
@@ -101,7 +105,7 @@ export async function openBook(record, parsedEpub) {
   els.bookTitle.textContent = epub.title;
   hideOverlay();
   // Strobe always starts disabled for a fresh reading session.
-  strobeEnabled = false;
+  strobeMode = "off";
   applyStrobeState();
   await loadChapter(spineIndex, progress.fraction || 0);
 }
@@ -117,7 +121,7 @@ function close() {
   bookId = null;
   els.content.innerHTML = "";
   // Stop the strobe so it doesn't keep animating in the library view.
-  strobeEnabled = false;
+  strobeMode = "off";
   applyStrobeState();
   if (onExit) onExit();
 }
@@ -295,7 +299,6 @@ function toggleOverlay() {
 function showOverlay() {
   overlayVisible = true;
   els.reader.classList.add("overlay-visible");
-  buildThemeButtons();
   els.fontValue.textContent = getFontSize() + "px";
   // Seed the strobe controls from the persisted settings + transient state.
   els.strobeFreq.value = getStrobeFreq();
@@ -303,18 +306,29 @@ function showOverlay() {
   els.strobeIntensity.value = getStrobeIntensity();
   els.strobeIntensityVal.textContent = getStrobeIntensity() + "%";
   highlightStrobeShape();
-  updateStrobeToggle();
+  highlightStrobeMode();
 }
 
-// Reflect the enable state on the reader element + toggle button label.
+// Reflect the mode on the reader element: each layer has its own class so the
+// CSS animations run independently (and together for "both").
 function applyStrobeState() {
-  els.reader.classList.toggle("strobe-active", strobeEnabled);
-  updateStrobeToggle();
+  els.reader.classList.toggle(
+    "strobe-bg-active",
+    strobeMode === "bg" || strobeMode === "both"
+  );
+  els.reader.classList.toggle(
+    "strobe-fg-active",
+    strobeMode === "fg" || strobeMode === "both"
+  );
+  highlightStrobeMode();
 }
 
-function updateStrobeToggle() {
-  els.strobeToggle.textContent = "Strobe: " + (strobeEnabled ? "On" : "Off");
-  els.strobeToggle.classList.toggle("active", strobeEnabled);
+function highlightStrobeMode() {
+  for (const b of els.strobeMode.children) {
+    b.classList.toggle("active", b.dataset.mode === strobeMode);
+  }
+  // The kill switch is only meaningful while something is strobing.
+  els.strobeStop.disabled = strobeMode === "off";
 }
 
 function highlightStrobeShape() {
@@ -347,23 +361,6 @@ function buildTocList() {
       }
     });
     els.tocList.appendChild(li);
-  });
-}
-
-function buildThemeButtons() {
-  els.themeRow.innerHTML = "";
-  const active = activeTheme().id;
-  allThemes().forEach((t) => {
-    const b = document.createElement("button");
-    b.className = "theme-chip" + (t.id === active ? " active" : "");
-    b.style.background = t.bg;
-    b.style.color = t.fg;
-    b.textContent = t.name;
-    b.addEventListener("click", () => {
-      setActiveTheme(t.id);
-      buildThemeButtons();
-    });
-    els.themeRow.appendChild(b);
   });
 }
 
