@@ -223,6 +223,69 @@ button.danger {
   /* Instant page turns: no transition on transform. */
   transition: none;
   will-change: transform;
+  /* Sit above the strobe overlay so only the background flickers. */
+  z-index: 2;
+}
+
+/* ---------- Strobe background flicker ---------- */
+/* Full-viewport layer behind the text. Colored with the inverse of the theme
+   background; its opacity is animated by CSS to flicker the background. */
+#strobe-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--strobe-color, #000000);
+  opacity: 0;
+  pointer-events: none;
+}
+/* Active only while reading with strobe enabled (toggled in reader.js). All
+   parameters come from CSS custom properties set by themes.js applyStrobe(). */
+#reader.strobe-active #strobe-overlay {
+  animation: var(--strobe-shape, strobe-square)
+    var(--strobe-duration, 0.1s) linear infinite;
+}
+
+/* Hard on/off square wave. */
+@keyframes strobe-square {
+  0%,
+  49.999% {
+    opacity: var(--strobe-max, 0);
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+/* Smooth sinusoidal flicker: a raised cosine sampled every 12.5% of the
+   period. Each stop scales the intensity max via calc(). */
+@keyframes strobe-sine {
+  0% {
+    opacity: calc(var(--strobe-max, 0) * 0);
+  }
+  12.5% {
+    opacity: calc(var(--strobe-max, 0) * 0.146);
+  }
+  25% {
+    opacity: calc(var(--strobe-max, 0) * 0.5);
+  }
+  37.5% {
+    opacity: calc(var(--strobe-max, 0) * 0.854);
+  }
+  50% {
+    opacity: calc(var(--strobe-max, 0) * 1);
+  }
+  62.5% {
+    opacity: calc(var(--strobe-max, 0) * 0.854);
+  }
+  75% {
+    opacity: calc(var(--strobe-max, 0) * 0.5);
+  }
+  87.5% {
+    opacity: calc(var(--strobe-max, 0) * 0.146);
+  }
+  100% {
+    opacity: calc(var(--strobe-max, 0) * 0);
+  }
 }
 #reader-content p {
   margin: 0 0 var(--para-spacing) 0;
@@ -371,6 +434,44 @@ button.danger {
 }
 .theme-chip.active {
   border-color: var(--accent);
+}
+
+/* ---------- Strobe controls (bottom overlay) ---------- */
+.strobe-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.strobe-ctl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 130px;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+.strobe-ctl input[type="range"] {
+  flex: 1;
+  min-width: 60px;
+}
+.strobe-ctl span {
+  min-width: 34px;
+  text-align: right;
+}
+#strobe-row .font-options {
+  margin-top: 0;
+  flex: none;
+}
+#strobe-row .font-option {
+  flex: none;
+  color: var(--overlay-fg);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+#strobe-toggle.active {
+  background: var(--accent);
 }
 
 /* ---------- TOC drawer ---------- */
