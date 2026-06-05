@@ -10,7 +10,22 @@ import {
   setActiveTheme,
   saveCustomTheme,
   deleteCustomTheme,
+  FONTS,
+  DEFAULT_FONT,
+  fontStack,
 } from "./themes.js";
+
+// Curated palette shown in place of the native rainbow color picker: a
+// monochrome ramp plus a few warm and cool tones, suited to paper/ink reading.
+const PALETTE = [
+  // monochrome
+  "#ffffff", "#e8e8e8", "#cfcfcf", "#9a9a9a",
+  "#5a5a5a", "#2b2b2b", "#121212", "#000000",
+  // warm
+  "#faf3e6", "#f4ecd8", "#e4d5b7", "#5b4636", "#3a2f25",
+  // cool
+  "#eef2f7", "#d6dde6", "#94a3b8", "#2e3a46", "#0f1722",
+];
 
 const $ = (id) => document.getElementById(id);
 
@@ -74,8 +89,6 @@ function wireThemeEditor() {
   const modal = $("theme-editor");
   const fields = {
     name: $("te-name"),
-    bg: $("te-bg"),
-    fg: $("te-fg"),
     line: $("te-line"),
     para: $("te-para"),
     margin: $("te-margin"),
@@ -86,6 +99,64 @@ function wireThemeEditor() {
     margin: $("te-margin-val"),
   };
   let editingId = null; // null => creating a new theme
+  // Color + font selections live in JS state (no native inputs).
+  let bgVal = "#ffffff";
+  let fgVal = "#1a1a1a";
+  let fontVal = DEFAULT_FONT;
+
+  // Build the curated swatch grid once; selecting a swatch updates `setVal`,
+  // re-highlights, and live-previews.
+  function buildSwatches(container, getVal, setVal) {
+    container.innerHTML = "";
+    PALETTE.forEach((color) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "swatch";
+      b.style.background = color;
+      b.title = color;
+      b.addEventListener("click", () => {
+        setVal(color);
+        highlightSwatches(container, getVal());
+        preview();
+      });
+      container.appendChild(b);
+    });
+  }
+  function highlightSwatches(container, value) {
+    const v = value.toLowerCase();
+    for (const b of container.children) {
+      b.classList.toggle("active", b.title.toLowerCase() === v);
+    }
+  }
+
+  // Build the reading-font picker once.
+  function buildFontOptions() {
+    const container = $("te-font");
+    container.innerHTML = "";
+    FONTS.forEach((f) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "font-option";
+      b.textContent = f.name;
+      b.style.fontFamily = f.stack;
+      b.dataset.id = f.id;
+      b.addEventListener("click", () => {
+        fontVal = f.id;
+        highlightFonts();
+        preview();
+      });
+      container.appendChild(b);
+    });
+  }
+  function highlightFonts() {
+    for (const b of $("te-font").children) {
+      b.classList.toggle("active", b.dataset.id === fontVal);
+    }
+  }
+
+  buildSwatches($("te-bg-swatches"), () => bgVal, (v) => (bgVal = v));
+  buildSwatches($("te-fg-swatches"), () => fgVal, (v) => (fgVal = v));
+  buildFontOptions();
 
   function open() {
     // Seed the form from the active theme as a convenient starting point.
@@ -102,11 +173,15 @@ function wireThemeEditor() {
 
   function loadForm(t) {
     fields.name.value = t.preset ? "" : t.name;
-    fields.bg.value = t.bg;
-    fields.fg.value = t.fg;
+    bgVal = t.bg;
+    fgVal = t.fg;
+    fontVal = t.fontFamily || DEFAULT_FONT;
     fields.line.value = t.lineHeight;
     fields.para.value = t.paraSpacing;
     fields.margin.value = t.margin;
+    highlightSwatches($("te-bg-swatches"), bgVal);
+    highlightSwatches($("te-fg-swatches"), fgVal);
+    highlightFonts();
     syncLabels();
     updateHeading();
   }
@@ -125,17 +200,18 @@ function wireThemeEditor() {
   // Live preview: write the in-progress values straight to the CSS variables.
   function preview() {
     const root = document.documentElement.style;
-    root.setProperty("--bg", fields.bg.value);
-    root.setProperty("--fg", fields.fg.value);
+    root.setProperty("--bg", bgVal);
+    root.setProperty("--fg", fgVal);
+    root.setProperty("--reading-font", fontStack(fontVal));
     root.setProperty("--line-height", fields.line.value);
     root.setProperty("--para-spacing", fields.para.value + "em");
     root.setProperty("--margin", fields.margin.value + "px");
     syncLabels();
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", fields.bg.value);
+    if (meta) meta.setAttribute("content", bgVal);
   }
 
-  for (const k of ["bg", "fg", "line", "para", "margin"]) {
+  for (const k of ["line", "para", "margin"]) {
     fields[k].addEventListener("input", preview);
   }
 
@@ -169,8 +245,9 @@ function wireThemeEditor() {
     const theme = {
       id: editingId || undefined,
       name: fields.name.value.trim() || "Custom",
-      bg: fields.bg.value,
-      fg: fields.fg.value,
+      bg: bgVal,
+      fg: fgVal,
+      fontFamily: fontVal,
       lineHeight: +fields.line.value,
       paraSpacing: +fields.para.value,
       margin: +fields.margin.value,

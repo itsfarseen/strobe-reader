@@ -1,7 +1,7 @@
 // Service worker: precache the app shell so the reader works fully offline.
 // Stored books live in IndexedDB (handled by the page, not the SW).
 
-const CACHE = "strobe-reader-v1";
+const CACHE = "strobe-reader-v2";
 
 const SHELL = [
   "./",
@@ -15,6 +15,12 @@ const SHELL = [
   "./js/themes.js",
   "./js/sanitize.js",
   "./vendor/fflate.module.js",
+  "./fonts/atkinson-hyperlegible-400.woff2",
+  "./fonts/atkinson-hyperlegible-700.woff2",
+  "./fonts/literata-400.woff2",
+  "./fonts/literata-700.woff2",
+  "./fonts/jetbrains-mono-400.woff2",
+  "./fonts/jetbrains-mono-700.woff2",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",

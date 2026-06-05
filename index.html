@@ -9,10 +9,9 @@
     <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
+    <!-- "default" lets the status bar follow the page instead of forcing a
+         light bar over dark themes; theme-color is kept in sync in themes.js. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Strobe Reader</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
@@ -86,12 +85,18 @@
         <label
           >Name <input id="te-name" type="text" placeholder="My theme"
         /></label>
-        <label
-          >Background <input id="te-bg" type="color" value="#ffffff"
-        /></label>
-        <label
-          >Text color <input id="te-fg" type="color" value="#1a1a1a"
-        /></label>
+        <label class="swatch-label"
+          >Background
+          <div id="te-bg-swatches" class="swatch-grid"></div>
+        </label>
+        <label class="swatch-label"
+          >Text color
+          <div id="te-fg-swatches" class="swatch-grid"></div>
+        </label>
+        <label class="swatch-label"
+          >Reading font
+          <div id="te-font" class="font-options"></div>
+        </label>
         <label
           >Line height
           <input id="te-line" type="range" min="1.1" max="2.2" step="0.05" />
