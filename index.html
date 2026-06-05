@@ -67,12 +67,27 @@
           </div>
           <button id="edit-theme-btn" class="ctl-btn">Themes…</button>
         </div>
-        <div id="theme-row" class="theme-row"></div>
 
-        <!-- Strobe controls: enable flickers the background toward the inverse
-             of the theme background. Starts disabled every session. -->
+        <!-- Strobe controls. Mode picks which layer flickers: the background
+             (toward the inverse theme color), the foreground text (by dimming
+             its opacity), both, or off. Stop is a kill switch. Mode always
+             starts at Off when a book opens; Hz/Intensity/Shape persist. -->
         <div id="strobe-row" class="strobe-row">
-          <button id="strobe-toggle" class="ctl-btn">Strobe: Off</button>
+          <div id="strobe-mode" class="font-options" aria-label="Strobe mode">
+            <button type="button" class="font-option" data-mode="off">
+              Off
+            </button>
+            <button type="button" class="font-option" data-mode="fg">
+              FG
+            </button>
+            <button type="button" class="font-option" data-mode="bg">
+              BG
+            </button>
+            <button type="button" class="font-option" data-mode="both">
+              Both
+            </button>
+          </div>
+          <button id="strobe-stop" class="ctl-btn strobe-stop">Stop</button>
           <label class="strobe-ctl"
             >Hz
             <input id="strobe-freq" type="range" min="1" max="60" step="1" />

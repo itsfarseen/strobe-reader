@@ -4,7 +4,7 @@
 // Bump this whenever you publish a new version. The byte change makes the
 // browser fetch this file, install a fresh worker, and re-precache the shell;
 // the page then offers the user a "new version available" refresh prompt.
-const CACHE = "strobe-reader-v4";
+const CACHE = "strobe-reader-v5";
 
 const SHELL = [
   "./",

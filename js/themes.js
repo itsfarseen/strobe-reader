@@ -186,6 +186,12 @@ export function applyStrobe() {
     "--strobe-shape",
     state.strobeShape === "sine" ? "strobe-sine" : "strobe-square"
   );
+  // Foreground strobe shares the shape/intensity but uses its own keyframes
+  // (which dim the text rather than fading in an overlay color).
+  root.setProperty(
+    "--strobe-fg-shape",
+    state.strobeShape === "sine" ? "strobe-fg-sine" : "strobe-fg-square"
+  );
 }
 
 export async function setActiveTheme(id) {
