@@ -290,21 +290,21 @@ function wireThemeEditor() {
 // on a first-ever install.
 let updateAccepted = false;
 
+// How often to poll for a new worker in a long-lived (e.g. open-all-day) tab.
+const SW_UPDATE_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
 
   // Register right away. main() is async, so by the time we get here the
   // window "load" event may have already fired — don't gate on it.
+  // updateViaCache: "none" forces the browser to fetch service-worker.js
+  // bypassing the HTTP cache, so a published change is always seen.
   navigator.serviceWorker
-    .register("service-worker.js")
+    .register("service-worker.js", { updateViaCache: "none" })
     .then((reg) => {
-      // An update may have finished installing on a prior visit and be sitting
-      // in "waiting"; surface it now.
-      if (reg.waiting && navigator.serviceWorker.controller) {
-        promptUpdate(reg.waiting);
-      }
-
-      // A new worker started installing while the app is open.
+      // Attach the updatefound listener *before* kicking an update check so we
+      // can't miss an install that the browser starts during this turn.
       reg.addEventListener("updatefound", () => {
         const incoming = reg.installing;
         if (!incoming) return;
@@ -319,6 +319,23 @@ function registerServiceWorker() {
           }
         });
       });
+
+      // An update may have finished installing on a prior visit and be sitting
+      // in "waiting"; surface it now.
+      if (reg.waiting && navigator.serviceWorker.controller) {
+        promptUpdate(reg.waiting);
+      }
+
+      // Firefox does not reliably run an update check on navigation/reload the
+      // way Chrome does, so the banner would otherwise never appear there.
+      // Explicitly drive the check: once now, again whenever the tab regains
+      // focus, and on a slow interval for tabs that stay open for hours.
+      const checkForUpdate = () => reg.update().catch(() => {});
+      checkForUpdate();
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") checkForUpdate();
+      });
+      setInterval(checkForUpdate, SW_UPDATE_INTERVAL_MS);
     })
     .catch((err) => console.warn("SW registration failed", err));
 
