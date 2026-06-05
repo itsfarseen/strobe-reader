@@ -520,3 +520,33 @@ button.danger {
 .modal-actions .spacer {
   flex: 1;
 }
+
+/* ----------------------- Update banner ----------------------- */
+/* Floats above every view (modal is z-index 30) so it stays visible whether
+   the user is in the library or mid-chapter in the reader. */
+.update-banner {
+  position: fixed;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 24px);
+  padding: 10px 12px 10px 16px;
+  background: var(--overlay-bg);
+  color: var(--overlay-fg);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+.update-banner[hidden] {
+  display: none;
+}
+.update-msg {
+  font-size: 0.95rem;
+}
+.update-banner #update-dismiss {
+  color: var(--overlay-fg);
+  font-size: 1rem;
+}
