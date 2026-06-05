@@ -13,6 +13,12 @@ import {
   onChange,
   MIN_FONT,
   MAX_FONT,
+  getStrobeFreq,
+  getStrobeIntensity,
+  getStrobeShape,
+  setStrobeFreq,
+  setStrobeIntensity,
+  setStrobeShape,
 } from "./themes.js";
 
 let els = null; // cached DOM references
@@ -26,6 +32,7 @@ let pageCount = 1;
 let pendingFraction = 0; // restore target within a freshly loaded chapter
 let saveTimer = null;
 let overlayVisible = false;
+let strobeEnabled = false; // transient: always starts off when a book opens
 
 export function initReader(elements, exitCallback) {
   els = elements;
@@ -41,6 +48,27 @@ export function initReader(elements, exitCallback) {
   // Font size controls.
   els.fontDec.addEventListener("click", () => setFontSize(getFontSize() - 1));
   els.fontInc.addEventListener("click", () => setFontSize(getFontSize() + 1));
+
+  // Strobe controls. The enable state is transient (reset on open); the
+  // frequency/intensity/shape settings persist via themes.js.
+  els.strobeToggle.addEventListener("click", () => {
+    strobeEnabled = !strobeEnabled;
+    applyStrobeState();
+  });
+  els.strobeFreq.addEventListener("input", () => {
+    setStrobeFreq(+els.strobeFreq.value);
+    els.strobeFreqVal.textContent = els.strobeFreq.value;
+  });
+  els.strobeIntensity.addEventListener("input", () => {
+    setStrobeIntensity(+els.strobeIntensity.value);
+    els.strobeIntensityVal.textContent = els.strobeIntensity.value + "%";
+  });
+  els.strobeShape.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-shape]");
+    if (!btn) return;
+    setStrobeShape(btn.dataset.shape);
+    highlightStrobeShape();
+  });
 
   // Keyboard paging for desktop.
   window.addEventListener("keydown", onKey);
@@ -72,6 +100,9 @@ export async function openBook(record, parsedEpub) {
   buildTocList();
   els.bookTitle.textContent = epub.title;
   hideOverlay();
+  // Strobe always starts disabled for a fresh reading session.
+  strobeEnabled = false;
+  applyStrobeState();
   await loadChapter(spineIndex, progress.fraction || 0);
 }
 
@@ -85,6 +116,9 @@ function close() {
   epub = null;
   bookId = null;
   els.content.innerHTML = "";
+  // Stop the strobe so it doesn't keep animating in the library view.
+  strobeEnabled = false;
+  applyStrobeState();
   if (onExit) onExit();
 }
 
@@ -263,6 +297,31 @@ function showOverlay() {
   els.reader.classList.add("overlay-visible");
   buildThemeButtons();
   els.fontValue.textContent = getFontSize() + "px";
+  // Seed the strobe controls from the persisted settings + transient state.
+  els.strobeFreq.value = getStrobeFreq();
+  els.strobeFreqVal.textContent = String(getStrobeFreq());
+  els.strobeIntensity.value = getStrobeIntensity();
+  els.strobeIntensityVal.textContent = getStrobeIntensity() + "%";
+  highlightStrobeShape();
+  updateStrobeToggle();
+}
+
+// Reflect the enable state on the reader element + toggle button label.
+function applyStrobeState() {
+  els.reader.classList.toggle("strobe-active", strobeEnabled);
+  updateStrobeToggle();
+}
+
+function updateStrobeToggle() {
+  els.strobeToggle.textContent = "Strobe: " + (strobeEnabled ? "On" : "Off");
+  els.strobeToggle.classList.toggle("active", strobeEnabled);
+}
+
+function highlightStrobeShape() {
+  const shape = getStrobeShape();
+  for (const b of els.strobeShape.children) {
+    b.classList.toggle("active", b.dataset.shape === shape);
+  }
 }
 
 function hideOverlay() {

@@ -72,6 +72,12 @@ async function main() {
       fontValue: $("font-value"),
       progressBar: $("progress-bar"),
       progressLabel: $("progress-label"),
+      strobeToggle: $("strobe-toggle"),
+      strobeFreq: $("strobe-freq"),
+      strobeFreqVal: $("strobe-freq-val"),
+      strobeIntensity: $("strobe-intensity"),
+      strobeIntensityVal: $("strobe-intensity-val"),
+      strobeShape: $("strobe-shape"),
     },
     showLibrary
   );
