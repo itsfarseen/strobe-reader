@@ -4,14 +4,45 @@
 
 import { getSettings, putSettings } from "./db.js";
 
-// A theme: bg/fg colors, line height (unitless), paragraph spacing (em),
-// and page margin (px). accent is derived for UI chrome.
+// Reading fonts, vendored as woff2 under /fonts (see css/app.css @font-face).
+// Each stack ends in a system fallback so text still renders if a file is
+// missing. The `id` is what gets stored on a theme's `fontFamily`.
+export const FONTS = [
+  {
+    id: "serif",
+    name: "Serif",
+    stack: '"Literata", Georgia, "Times New Roman", serif',
+  },
+  {
+    id: "sans",
+    name: "Sans",
+    stack:
+      '"Atkinson Hyperlegible", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
+  {
+    id: "mono",
+    name: "Mono",
+    stack: '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace',
+  },
+];
+
+export const DEFAULT_FONT = "serif";
+
+export function fontStack(id) {
+  const f = FONTS.find((x) => x.id === id);
+  return (f || FONTS.find((x) => x.id === DEFAULT_FONT)).stack;
+}
+
+// A theme: bg/fg colors, reading font family (a FONTS id), line height
+// (unitless), paragraph spacing (em), and page margin (px). accent is derived
+// for UI chrome.
 export const PRESETS = [
   {
     id: "light",
     name: "Light",
     bg: "#ffffff",
     fg: "#1a1a1a",
+    fontFamily: "serif",
     lineHeight: 1.6,
     paraSpacing: 1.0,
     margin: 24,
@@ -22,6 +53,7 @@ export const PRESETS = [
     name: "Sepia",
     bg: "#f4ecd8",
     fg: "#5b4636",
+    fontFamily: "serif",
     lineHeight: 1.6,
     paraSpacing: 1.0,
     margin: 24,
@@ -32,6 +64,7 @@ export const PRESETS = [
     name: "Dark",
     bg: "#121212",
     fg: "#cfcfcf",
+    fontFamily: "sans",
     lineHeight: 1.7,
     paraSpacing: 1.0,
     margin: 24,
@@ -95,6 +128,7 @@ export function applyTheme() {
   const root = document.documentElement.style;
   root.setProperty("--bg", t.bg);
   root.setProperty("--fg", t.fg);
+  root.setProperty("--reading-font", fontStack(t.fontFamily));
   root.setProperty("--line-height", String(t.lineHeight));
   root.setProperty("--para-spacing", `${t.paraSpacing}em`);
   root.setProperty("--margin", `${t.margin}px`);
