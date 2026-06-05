@@ -7,6 +7,8 @@ instant tap-driven page turns, selectable themes, and adjustable font size.
 No build step — it's plain static files (vanilla JS, ES modules). Just serve the
 folder.
 
+**Live demo:** https://itsfarseen.github.io/strobe-reader/
+
 ## Features
 
 - **Import & store** EPUBs locally via **IndexedDB** (works on all browsers,
@@ -35,7 +37,8 @@ python3 -m http.server 8000
 # then open http://localhost:8000/
 ```
 
-Or deploy the folder to any static host (e.g. GitHub Pages).
+Or deploy the folder to any static host. This repo is deployed via **GitHub
+Pages** at <https://itsfarseen.github.io/strobe-reader/>.
 
 ## How it works
 
