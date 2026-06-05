@@ -10,6 +10,12 @@ import {
   setActiveTheme,
   saveCustomTheme,
   deleteCustomTheme,
+  allTypographies,
+  activeTypography,
+  setActiveTypography,
+  saveCustomTypography,
+  deleteCustomTypography,
+  applyTypography,
   FONTS,
   DEFAULT_FONT,
   fontStack,
@@ -87,33 +93,47 @@ async function main() {
     showLibrary
   );
 
-  // ---- Theme editor ----
+  // ---- Theme + typography editors ----
   wireThemeEditor();
+  wireTypographyEditor();
 
   await refreshLibrary();
   registerServiceWorker();
 }
 
+// Build a reading-font picker into `container`: one button per FONTS entry,
+// rendered in its own typeface. Clicking calls onPick(id). Shared by the theme
+// (none anymore) and typography editors via highlightFontPicker() below.
+function buildFontPicker(container, onPick) {
+  container.innerHTML = "";
+  FONTS.forEach((f) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "font-option";
+    b.textContent = f.name;
+    b.style.fontFamily = f.stack;
+    b.dataset.id = f.id;
+    b.addEventListener("click", () => onPick(f.id));
+    container.appendChild(b);
+  });
+}
+function highlightFontPicker(container, id) {
+  for (const b of container.children) {
+    b.classList.toggle("active", b.dataset.id === id);
+  }
+}
+
 // ----------------------- Theme editor modal -----------------------
+// Themes carry colors only; typography (font/spacing/margin) lives in the Text
+// editor below.
 
 function wireThemeEditor() {
   const modal = $("theme-editor");
-  const fields = {
-    name: $("te-name"),
-    line: $("te-line"),
-    para: $("te-para"),
-    margin: $("te-margin"),
-  };
-  const labels = {
-    line: $("te-line-val"),
-    para: $("te-para-val"),
-    margin: $("te-margin-val"),
-  };
+  const nameField = $("te-name");
   let editingId = null; // null => creating a new theme
-  // Color + font selections live in JS state (no native inputs).
+  // Color selections live in JS state (no native inputs).
   let bgVal = "#ffffff";
   let fgVal = "#1a1a1a";
-  let fontVal = DEFAULT_FONT;
 
   // Build the curated swatch grid once; selecting a swatch updates `setVal`,
   // re-highlights, and live-previews.
@@ -140,34 +160,8 @@ function wireThemeEditor() {
     }
   }
 
-  // Build the reading-font picker once.
-  function buildFontOptions() {
-    const container = $("te-font");
-    container.innerHTML = "";
-    FONTS.forEach((f) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "font-option";
-      b.textContent = f.name;
-      b.style.fontFamily = f.stack;
-      b.dataset.id = f.id;
-      b.addEventListener("click", () => {
-        fontVal = f.id;
-        highlightFonts();
-        preview();
-      });
-      container.appendChild(b);
-    });
-  }
-  function highlightFonts() {
-    for (const b of $("te-font").children) {
-      b.classList.toggle("active", b.dataset.id === fontVal);
-    }
-  }
-
   buildSwatches($("te-bg-swatches"), () => bgVal, (v) => (bgVal = v));
   buildSwatches($("te-fg-swatches"), () => fgVal, (v) => (fgVal = v));
-  buildFontOptions();
 
   function open() {
     // Seed the form from the active theme as a convenient starting point.
@@ -183,24 +177,12 @@ function wireThemeEditor() {
   }
 
   function loadForm(t) {
-    fields.name.value = t.preset ? "" : t.name;
+    nameField.value = t.preset ? "" : t.name;
     bgVal = t.bg;
     fgVal = t.fg;
-    fontVal = t.fontFamily || DEFAULT_FONT;
-    fields.line.value = t.lineHeight;
-    fields.para.value = t.paraSpacing;
-    fields.margin.value = t.margin;
     highlightSwatches($("te-bg-swatches"), bgVal);
     highlightSwatches($("te-fg-swatches"), fgVal);
-    highlightFonts();
-    syncLabels();
     updateHeading();
-  }
-
-  function syncLabels() {
-    labels.line.textContent = (+fields.line.value).toFixed(2);
-    labels.para.textContent = (+fields.para.value).toFixed(1) + "em";
-    labels.margin.textContent = fields.margin.value + "px";
   }
 
   function updateHeading() {
@@ -208,22 +190,13 @@ function wireThemeEditor() {
     $("te-delete").hidden = !editingId;
   }
 
-  // Live preview: write the in-progress values straight to the CSS variables.
+  // Live preview: write the in-progress colors straight to the CSS variables.
   function preview() {
     const root = document.documentElement.style;
     root.setProperty("--bg", bgVal);
     root.setProperty("--fg", fgVal);
-    root.setProperty("--reading-font", fontStack(fontVal));
-    root.setProperty("--line-height", fields.line.value);
-    root.setProperty("--para-spacing", fields.para.value + "em");
-    root.setProperty("--margin", fields.margin.value + "px");
-    syncLabels();
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", bgVal);
-  }
-
-  for (const k of ["line", "para", "margin"]) {
-    fields[k].addEventListener("input", preview);
   }
 
   function buildList() {
@@ -255,13 +228,9 @@ function wireThemeEditor() {
   $("te-save").addEventListener("click", async () => {
     const theme = {
       id: editingId || undefined,
-      name: fields.name.value.trim() || "Custom",
+      name: nameField.value.trim() || "Custom",
       bg: bgVal,
       fg: fgVal,
-      fontFamily: fontVal,
-      lineHeight: +fields.line.value,
-      paraSpacing: +fields.para.value,
-      margin: +fields.margin.value,
     };
     const saved = await saveCustomTheme(theme);
     await setActiveTheme(saved.id);
@@ -274,6 +243,136 @@ function wireThemeEditor() {
     await deleteCustomTheme(editingId);
     editingId = null;
     loadForm(activeTheme());
+    buildList();
+  });
+
+  // Close when tapping the backdrop.
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) close();
+  });
+}
+
+// ----------------------- Text (typography) editor modal -----------------------
+// Typography presets carry reading font, line height, paragraph spacing, and
+// margin — independent of the theme, so colors and layout don't disturb each
+// other. Font size stays a separate global control (A−/A＋).
+
+function wireTypographyEditor() {
+  const modal = $("typo-editor");
+  const fields = {
+    name: $("ty-name"),
+    line: $("ty-line"),
+    para: $("ty-para"),
+    margin: $("ty-margin"),
+  };
+  const labels = {
+    line: $("ty-line-val"),
+    para: $("ty-para-val"),
+    margin: $("ty-margin-val"),
+  };
+  let editingId = null; // null => creating a new preset
+  let fontVal = DEFAULT_FONT;
+
+  buildFontPicker($("ty-font"), (id) => {
+    fontVal = id;
+    highlightFontPicker($("ty-font"), fontVal);
+    preview();
+  });
+
+  function open() {
+    // Seed the form from the active typography as a convenient starting point.
+    const t = activeTypography();
+    editingId = t.preset ? null : t.id;
+    loadForm(t);
+    buildList();
+    modal.classList.add("open");
+  }
+  function close() {
+    modal.classList.remove("open");
+    applyTypography(); // discard any live-preview overrides
+  }
+
+  function loadForm(t) {
+    fields.name.value = t.preset ? "" : t.name;
+    fontVal = t.fontFamily || DEFAULT_FONT;
+    fields.line.value = t.lineHeight;
+    fields.para.value = t.paraSpacing;
+    fields.margin.value = t.margin;
+    highlightFontPicker($("ty-font"), fontVal);
+    syncLabels();
+    updateHeading();
+  }
+
+  function syncLabels() {
+    labels.line.textContent = (+fields.line.value).toFixed(2);
+    labels.para.textContent = (+fields.para.value).toFixed(1) + "em";
+    labels.margin.textContent = fields.margin.value + "px";
+  }
+
+  function updateHeading() {
+    $("typo-heading").textContent = editingId ? "Edit preset" : "New preset";
+    $("ty-delete").hidden = !editingId;
+  }
+
+  // Live preview: write the in-progress values straight to the CSS variables.
+  function preview() {
+    const root = document.documentElement.style;
+    root.setProperty("--reading-font", fontStack(fontVal));
+    root.setProperty("--line-height", fields.line.value);
+    root.setProperty("--para-spacing", fields.para.value + "em");
+    root.setProperty("--margin", fields.margin.value + "px");
+    syncLabels();
+  }
+
+  for (const k of ["line", "para", "margin"]) {
+    fields[k].addEventListener("input", preview);
+  }
+
+  function buildList() {
+    const list = $("typo-list");
+    list.innerHTML = "";
+    const active = activeTypography().id;
+    for (const t of allTypographies()) {
+      const row = document.createElement("div");
+      row.className = "editor-theme-row" + (t.id === active ? " active" : "");
+
+      const chip = document.createElement("button");
+      chip.className = "theme-chip typo-chip";
+      chip.style.fontFamily = fontStack(t.fontFamily);
+      chip.textContent = t.name + (t.preset ? "" : " ✎");
+      chip.addEventListener("click", () => {
+        setActiveTypography(t.id);
+        editingId = t.preset ? null : t.id;
+        loadForm(t);
+        buildList();
+      });
+      row.appendChild(chip);
+      list.appendChild(row);
+    }
+  }
+
+  $("edit-typo-btn").addEventListener("click", open);
+  $("ty-cancel").addEventListener("click", close);
+  $("ty-save").addEventListener("click", async () => {
+    const typo = {
+      id: editingId || undefined,
+      name: fields.name.value.trim() || "Custom",
+      fontFamily: fontVal,
+      lineHeight: +fields.line.value,
+      paraSpacing: +fields.para.value,
+      margin: +fields.margin.value,
+    };
+    const saved = await saveCustomTypography(typo);
+    await setActiveTypography(saved.id);
+    editingId = saved.id;
+    buildList();
+    updateHeading();
+  });
+  $("ty-delete").addEventListener("click", async () => {
+    if (!editingId) return;
+    await deleteCustomTypography(editingId);
+    editingId = null;
+    loadForm(activeTypography());
     buildList();
   });
 

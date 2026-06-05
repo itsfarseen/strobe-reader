@@ -520,6 +520,12 @@ button.danger {
   white-space: nowrap;
   box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.4);
 }
+/* Typography chips have no theme colors; render the label in the preset's own
+   reading font over a neutral surface so the typeface is the cue. */
+.typo-chip {
+  background: rgba(128, 128, 128, 0.14);
+  color: inherit;
+}
 
 /* ---------- Strobe controls (bottom overlay) ---------- */
 .strobe-row {

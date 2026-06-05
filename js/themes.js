@@ -33,19 +33,15 @@ export function fontStack(id) {
   return (f || FONTS.find((x) => x.id === DEFAULT_FONT)).stack;
 }
 
-// A theme: bg/fg colors, reading font family (a FONTS id), line height
-// (unitless), paragraph spacing (em), and page margin (px). accent is derived
-// for UI chrome.
+// A theme: bg/fg colors only. Typography (reading font, spacing, margin) is a
+// separate concern, kept in typography presets below, so changing a theme's
+// colors no longer disturbs the reading layout. accent is derived for UI chrome.
 export const PRESETS = [
   {
     id: "light",
     name: "Light",
     bg: "#ffffff",
     fg: "#1a1a1a",
-    fontFamily: "serif",
-    lineHeight: 1.6,
-    paraSpacing: 1.0,
-    margin: 24,
     preset: true,
   },
   {
@@ -53,10 +49,6 @@ export const PRESETS = [
     name: "Sepia",
     bg: "#f4ecd8",
     fg: "#5b4636",
-    fontFamily: "serif",
-    lineHeight: 1.6,
-    paraSpacing: 1.0,
-    margin: 24,
     preset: true,
   },
   {
@@ -64,18 +56,51 @@ export const PRESETS = [
     name: "Dark",
     bg: "#121212",
     fg: "#cfcfcf",
+    preset: true,
+  },
+];
+
+// A typography preset: reading font family (a FONTS id), line height (unitless),
+// paragraph spacing (em), and page margin (px). Independent of the theme, so the
+// reading layout stays put when colors change. Font size is separate and global.
+export const TYPO_PRESETS = [
+  {
+    id: "typo-serif",
+    name: "Serif",
+    fontFamily: "serif",
+    lineHeight: 1.6,
+    paraSpacing: 1.0,
+    margin: 24,
+    preset: true,
+  },
+  {
+    id: "typo-sans",
+    name: "Sans",
     fontFamily: "sans",
     lineHeight: 1.7,
     paraSpacing: 1.0,
     margin: 24,
     preset: true,
   },
+  {
+    id: "typo-compact",
+    name: "Compact",
+    fontFamily: "sans",
+    lineHeight: 1.4,
+    paraSpacing: 0.6,
+    margin: 16,
+    preset: true,
+  },
 ];
+
+export const DEFAULT_TYPO = "typo-serif";
 
 const DEFAULTS = {
   activeThemeId: "light",
+  activeTypographyId: DEFAULT_TYPO,
   fontSize: 18,
   customThemes: [],
+  customTypographies: [],
   // Strobe config persists; the on/off state is transient (reader.js) so the
   // effect always starts disabled when a book is opened.
   strobeFreq: 10,
@@ -103,6 +128,7 @@ export async function initSettings() {
   const saved = await getSettings();
   if (saved) state = { ...DEFAULTS, ...saved };
   applyTheme();
+  applyTypography();
   return state;
 }
 
@@ -118,8 +144,10 @@ function notify() {
 async function persist() {
   await putSettings({
     activeThemeId: state.activeThemeId,
+    activeTypographyId: state.activeTypographyId,
     fontSize: state.fontSize,
     customThemes: state.customThemes,
+    customTypographies: state.customTypographies,
     strobeFreq: state.strobeFreq,
     strobeIntensity: state.strobeIntensity,
     strobeShape: state.strobeShape,
@@ -135,6 +163,17 @@ export function allThemes() {
 export function activeTheme() {
   return (
     allThemes().find((t) => t.id === state.activeThemeId) || PRESETS[0]
+  );
+}
+
+export function allTypographies() {
+  return [...TYPO_PRESETS, ...state.customTypographies];
+}
+
+export function activeTypography() {
+  return (
+    allTypographies().find((t) => t.id === state.activeTypographyId) ||
+    TYPO_PRESETS[0]
   );
 }
 
@@ -171,16 +210,13 @@ export function inverseColor(hex) {
   return "#" + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
 }
 
-// Push the active theme + font size into CSS custom properties.
+// Push the active theme's colors + the global font size into CSS custom
+// properties. Typography (font/spacing/margin) lives in applyTypography().
 export function applyTheme() {
   const t = activeTheme();
   const root = document.documentElement.style;
   root.setProperty("--bg", t.bg);
   root.setProperty("--fg", t.fg);
-  root.setProperty("--reading-font", fontStack(t.fontFamily));
-  root.setProperty("--line-height", String(t.lineHeight));
-  root.setProperty("--para-spacing", `${t.paraSpacing}em`);
-  root.setProperty("--margin", `${t.margin}px`);
   root.setProperty("--font-size", `${state.fontSize}px`);
   // Keep the browser/OS UI (status bar) in sync in standalone mode.
   const meta = document.querySelector('meta[name="theme-color"]');
@@ -189,6 +225,18 @@ export function applyTheme() {
   // it in sync whenever the theme changes.
   applyStrobe();
   applyJiggle();
+}
+
+// Push the active typography preset into CSS custom properties. Independent of
+// the theme so colors and reading layout can change without disturbing each
+// other.
+export function applyTypography() {
+  const t = activeTypography();
+  const root = document.documentElement.style;
+  root.setProperty("--reading-font", fontStack(t.fontFamily));
+  root.setProperty("--line-height", String(t.lineHeight));
+  root.setProperty("--para-spacing", `${t.paraSpacing}em`);
+  root.setProperty("--margin", `${t.margin}px`);
 }
 
 // Push strobe parameters into CSS custom properties consumed by the keyframe
@@ -269,8 +317,41 @@ export async function setJiggleIntensity(units) {
   await persist();
 }
 
-function makeId() {
-  return "custom-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function makeId(prefix = "custom") {
+  return prefix + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+export async function setActiveTypography(id) {
+  state.activeTypographyId = id;
+  applyTypography();
+  await persist();
+  notify();
+}
+
+export async function saveCustomTypography(typo) {
+  // typo without id => create; with id => update existing custom typography.
+  if (typo.id && state.customTypographies.some((t) => t.id === typo.id)) {
+    state.customTypographies = state.customTypographies.map((t) =>
+      t.id === typo.id ? { ...typo, preset: false } : t
+    );
+  } else {
+    typo = { ...typo, id: makeId("typo-custom"), preset: false };
+    state.customTypographies.push(typo);
+  }
+  await persist();
+  if (typo.id === state.activeTypographyId) applyTypography();
+  notify();
+  return typo;
+}
+
+export async function deleteCustomTypography(id) {
+  state.customTypographies = state.customTypographies.filter((t) => t.id !== id);
+  if (state.activeTypographyId === id) {
+    state.activeTypographyId = TYPO_PRESETS[0].id;
+    applyTypography();
+  }
+  await persist();
+  notify();
 }
 
 export async function saveCustomTheme(theme) {
