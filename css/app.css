@@ -339,6 +339,48 @@ button.danger {
     opacity: calc(1 - var(--strobe-max, 0) * 0);
   }
 }
+/* ---------- Jiggle ---------- */
+/* Oscillate the reading text back and forth. We animate the independent
+   `translate` property (NOT `transform`) so it composes with the page-turn
+   transform that reader.js sets inline on #reader-content; paging stays intact
+   while the text jiggles around its current position. Amplitude/duration come
+   from CSS custom properties set by themes.js applyJiggle(). */
+@keyframes jiggle-x {
+  0%,
+  100% {
+    translate: calc(-1 * var(--jiggle-amp, 0px)) 0;
+  }
+  50% {
+    translate: var(--jiggle-amp, 0px) 0;
+  }
+}
+@keyframes jiggle-y {
+  0%,
+  100% {
+    translate: 0 calc(-1 * var(--jiggle-amp, 0px));
+  }
+  50% {
+    translate: 0 var(--jiggle-amp, 0px);
+  }
+}
+#reader.jiggle-x-active #reader-content {
+  animation: jiggle-x var(--jiggle-duration, 0.2s) ease-in-out infinite;
+}
+#reader.jiggle-y-active #reader-content {
+  animation: jiggle-y var(--jiggle-duration, 0.2s) ease-in-out infinite;
+}
+/* Foreground strobe also animates #reader-content (its opacity), so when both
+   are on they must share the single `animation` shorthand as a two-item list. */
+#reader.strobe-fg-active.jiggle-x-active #reader-content {
+  animation: var(--strobe-fg-shape, strobe-fg-square)
+      var(--strobe-duration, 0.1s) linear infinite,
+    jiggle-x var(--jiggle-duration, 0.2s) ease-in-out infinite;
+}
+#reader.strobe-fg-active.jiggle-y-active #reader-content {
+  animation: var(--strobe-fg-shape, strobe-fg-square)
+      var(--strobe-duration, 0.1s) linear infinite,
+    jiggle-y var(--jiggle-duration, 0.2s) ease-in-out infinite;
+}
 #reader-content p {
   margin: 0 0 var(--para-spacing) 0;
   text-align: justify;
@@ -504,16 +546,19 @@ button.danger {
   min-width: 34px;
   text-align: right;
 }
-#strobe-row .font-options {
+#strobe-row .font-options,
+#jiggle-row .font-options {
   margin-top: 0;
   flex: none;
 }
-#strobe-row .font-option {
+#strobe-row .font-option,
+#jiggle-row .font-option {
   flex: none;
   color: var(--overlay-fg);
   border-color: rgba(255, 255, 255, 0.3);
 }
-#strobe-mode .font-option.active {
+#strobe-mode .font-option.active,
+#jiggle-mode .font-option.active {
   background: var(--accent);
 }
 /* Kill switch: a prominent red Stop button. Dimmed while strobe is already

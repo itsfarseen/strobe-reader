@@ -78,6 +78,11 @@ async function main() {
       strobeIntensity: $("strobe-intensity"),
       strobeIntensityVal: $("strobe-intensity-val"),
       strobeShape: $("strobe-shape"),
+      jiggleMode: $("jiggle-mode"),
+      jiggleFreq: $("jiggle-freq"),
+      jiggleFreqVal: $("jiggle-freq-val"),
+      jiggleIntensity: $("jiggle-intensity"),
+      jiggleIntensityVal: $("jiggle-intensity-val"),
     },
     showLibrary
   );

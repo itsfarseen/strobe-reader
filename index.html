@@ -113,6 +113,39 @@
             </button>
           </div>
         </div>
+
+        <!-- Jiggle controls. Mode oscillates the reading text back and forth
+             horizontally or vertically (or off) via a CSS translate animation.
+             Mode always starts at Off when a book opens; Hz/Intensity persist. -->
+        <div id="jiggle-row" class="strobe-row">
+          <div id="jiggle-mode" class="font-options" aria-label="Jiggle mode">
+            <button type="button" class="font-option" data-mode="off">
+              Off
+            </button>
+            <button type="button" class="font-option" data-mode="horizontal">
+              Horizontal
+            </button>
+            <button type="button" class="font-option" data-mode="vertical">
+              Vertical
+            </button>
+          </div>
+          <label class="strobe-ctl"
+            >Hz
+            <input id="jiggle-freq" type="range" min="1" max="30" step="1" />
+            <span id="jiggle-freq-val"></span>
+          </label>
+          <label class="strobe-ctl"
+            >Intensity
+            <input
+              id="jiggle-intensity"
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+            />
+            <span id="jiggle-intensity-val"></span>
+          </label>
+        </div>
       </div>
 
       <!-- Table of contents drawer -->

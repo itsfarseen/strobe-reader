@@ -16,6 +16,10 @@ import {
   setStrobeFreq,
   setStrobeIntensity,
   setStrobeShape,
+  getJiggleFreq,
+  getJiggleIntensity,
+  setJiggleFreq,
+  setJiggleIntensity,
 } from "./themes.js";
 
 let els = null; // cached DOM references
@@ -30,6 +34,7 @@ let pendingFraction = 0; // restore target within a freshly loaded chapter
 let saveTimer = null;
 let overlayVisible = false;
 let strobeMode = "off"; // transient: "off" | "fg" | "bg" | "both", reset on open
+let jiggleMode = "off"; // transient: "off" | "horizontal" | "vertical", reset on open
 
 export function initReader(elements, exitCallback) {
   els = elements;
@@ -74,6 +79,23 @@ export function initReader(elements, exitCallback) {
     highlightStrobeShape();
   });
 
+  // Jiggle controls. The mode is transient (reset on open); the
+  // frequency/intensity settings persist via themes.js.
+  els.jiggleMode.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-mode]");
+    if (!btn) return;
+    jiggleMode = btn.dataset.mode;
+    applyJiggleState();
+  });
+  els.jiggleFreq.addEventListener("input", () => {
+    setJiggleFreq(+els.jiggleFreq.value);
+    els.jiggleFreqVal.textContent = els.jiggleFreq.value;
+  });
+  els.jiggleIntensity.addEventListener("input", () => {
+    setJiggleIntensity(+els.jiggleIntensity.value);
+    els.jiggleIntensityVal.textContent = jiggleEm(els.jiggleIntensity.value);
+  });
+
   // Keyboard paging for desktop.
   window.addEventListener("keydown", onKey);
 
@@ -104,9 +126,11 @@ export async function openBook(record, parsedEpub) {
   buildTocList();
   els.bookTitle.textContent = epub.title;
   hideOverlay();
-  // Strobe always starts disabled for a fresh reading session.
+  // Strobe and jiggle always start disabled for a fresh reading session.
   strobeMode = "off";
   applyStrobeState();
+  jiggleMode = "off";
+  applyJiggleState();
   await loadChapter(spineIndex, progress.fraction || 0);
 }
 
@@ -120,9 +144,11 @@ function close() {
   epub = null;
   bookId = null;
   els.content.innerHTML = "";
-  // Stop the strobe so it doesn't keep animating in the library view.
+  // Stop the strobe and jiggle so they don't keep animating in the library view.
   strobeMode = "off";
   applyStrobeState();
+  jiggleMode = "off";
+  applyJiggleState();
   if (onExit) onExit();
 }
 
@@ -307,6 +333,12 @@ function showOverlay() {
   els.strobeIntensityVal.textContent = getStrobeIntensity() + "%";
   highlightStrobeShape();
   highlightStrobeMode();
+  // Seed the jiggle controls from the persisted settings + transient state.
+  els.jiggleFreq.value = getJiggleFreq();
+  els.jiggleFreqVal.textContent = String(getJiggleFreq());
+  els.jiggleIntensity.value = getJiggleIntensity();
+  els.jiggleIntensityVal.textContent = jiggleEm(getJiggleIntensity());
+  highlightJiggleMode();
 }
 
 // Reflect the mode on the reader element: each layer has its own class so the
@@ -335,6 +367,25 @@ function highlightStrobeShape() {
   const shape = getStrobeShape();
   for (const b of els.strobeShape.children) {
     b.classList.toggle("active", b.dataset.shape === shape);
+  }
+}
+
+// Format the jiggle intensity slider value (0-100) as an em amplitude label.
+function jiggleEm(value) {
+  return (value / 100).toFixed(2) + "em";
+}
+
+// Reflect the jiggle mode on the reader element: each axis has its own class so
+// the CSS translate animation runs on the right axis (or not at all).
+function applyJiggleState() {
+  els.reader.classList.toggle("jiggle-x-active", jiggleMode === "horizontal");
+  els.reader.classList.toggle("jiggle-y-active", jiggleMode === "vertical");
+  highlightJiggleMode();
+}
+
+function highlightJiggleMode() {
+  for (const b of els.jiggleMode.children) {
+    b.classList.toggle("active", b.dataset.mode === jiggleMode);
   }
 }
 
